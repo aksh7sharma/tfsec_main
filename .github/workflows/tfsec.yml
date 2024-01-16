@@ -153,6 +153,10 @@ jobs:
         run: |
           mkdir -p Results
           mv complete_results.md Results/tfsec_results.md
+
+      # Step: Display contents of result file
+      - name: Display result file
+        run: cat Results/tfsec_results.md
  
       # Step: Display the contents of the Results directory
       - name: Display the contents of the Results directory
