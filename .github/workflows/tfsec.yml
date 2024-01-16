@@ -157,6 +157,10 @@ jobs:
       # Step: Display contents of result file
       - name: Display result file
         run: cat Results/tfsec_results.md
+
+      # Debugging
+      - name: Display some environment variables
+        run: echo $GITHUB_SERVER_URL $GITHUB_REPOSITORY
  
       # Step: Display the contents of the Results directory
       - name: Display the contents of the Results directory
