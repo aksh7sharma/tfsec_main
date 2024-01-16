@@ -29,6 +29,7 @@ resource "aws_lambda_function" "local_zipfile" {
 resource "aws_lambda_function" "s3_zipfile" {
   count = "${var.function_s3_bucket == "" ? 0 : 1}"
 
+  # random comment
   # These are SPECIFIC to the deployment method:
   s3_bucket = "${var.function_s3_bucket}"
   s3_key    = "${var.function_zipfile}"
