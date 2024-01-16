@@ -167,7 +167,7 @@ jobs:
         id: extract-url
         if: steps.tfsec_complete.outputs != ''  # Run only if there are findings
         env:
-          GITHUB_TOKEN: ${{ secrets.SECURITY_TOKEN_FOR_TFSEC }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Check if a release exists
           latest_release=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
