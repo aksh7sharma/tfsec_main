@@ -143,6 +143,10 @@ jobs:
         id: tfsec_complete
         run: |
           tfsec . --out complete_results.md --format markdown --soft-fail --force-all-dirs --minimum-severity HIGH
+
+      # Step: Display contents of result file
+      - name: Display result file
+        run: cat complete_results.md
  
       # Step: Create Results directory and move the results file
       - name: Create Results directory and move the results file
