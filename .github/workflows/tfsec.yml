@@ -1,0 +1,225 @@
+# Workflow name: tfsec
+name: tfsec
+
+# Define when the workflow should run
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+# Define the jobs to be executed
+jobs:
+  # Job to retrieve tfsec binary from S3 and analyze changes
+  tfsec-on-modified-files-only:
+    name: Run tfsec on modified/added files only
+    if: always()
+    runs-on: [size/small]
+    permissions: write-all
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_TFSEC }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_TFSEC }}
+      AWS_DEFAULT_REGION: eu-central-1
+
+    steps:
+      # Step: Check out the code from the PR branch
+      - name: Checkout PR Branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      # Step: List the modified or added files in the PR
+      - name: List Modified or Added Files
+        if: always()
+        id: list-files
+        run: |
+          mkdir -p folder_for_delta_files
+          modified_files=$(git diff --name-only HEAD^..HEAD)
+         
+          for file in $modified_files; do
+            cp $(echo "$(pwd)/$file") folder_for_delta_files
+          done
+
+      # Step: Install AWS CLI for later use
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+         
+      # Step: Retrieve the tfsec binary from S3
+      - name: Retrieve object from S3
+        run: |
+          aws s3 cp s3://tfsec-bucket/tfsec tfsec
+
+      # Step: Make the tfsec binary executable
+      - name: Convert the binary into executable
+        run: chmod +x tfsec
+
+      # Step: Move the executable to the PATH
+      - name: Move executable to PATH
+        run: sudo mv tfsec /usr/local/bin
+
+      # Step: Run tfsec on the modified or added files
+      - name: Run tfsec
+        if: always()
+        run: |
+          tfsec folder_for_delta_files --soft-fail --out tfsec_results.json --format json --minimum-severity HIGH
+
+      # Step: Parse tfsec results and create a PR comment
+      - name: Parse tfsec results and create PR comment
+        id: parse-results
+        run: |
+          tfsec_results="$(cat tfsec_results.json)"
+     
+          findings="$(echo "$tfsec_results" | jq -r '.results[] | "\n• **Rule**: <span style=\"color: red;\">(\(.rule_id) - \(.rule_description))</span>\n • **Severity**: \(.severity)\n • **Resolution**: \(.resolution)\n • **Link**: \(.links[0])\n • **Location**: \(.location.filename):\(.location.start_line)-\(.location.end_line)\n"')"
+     
+          if [[ -z "${findings// }" ]]; then
+            echo "No findings found in tfsec_results.json"
+          else
+            findings="${findings//'%'/'%25'}"
+            findings="${findings//$'\n'/'%0A'}"
+            findings="${findings//$'\r'/'%0D'}"
+            echo "$findings"
+            echo "::set-output name=output1::$findings"
+          fi
+        shell: bash
+
+      # Step: Post a PR comment if there are tfsec findings
+      - name: PR comment
+        if: steps.parse-results.outputs.output1 != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment_message = `:exclamation: Security issues detected in recently modified/added Terraform file(s) :exclamation: <details><summary> Expand this section to view security Issues detected in one or more Terraform file </summary><br>\n\n${{ steps.parse-results.outputs.output1 }}</details>`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment_message
+            })
+
+  # Job to attach complete tfsec analysis results
+  tfsec-on-all-files:
+    name: Run tfsec on all files in repo and attach as release asset
+    runs-on: [size/small]
+    permissions: write-all
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_TFSEC }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_TFSEC }}
+      AWS_DEFAULT_REGION: eu-central-1
+ 
+    steps:
+      # Step: Check out the code from the PR branch
+      - name: Checkout PR Branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      # Step: Install AWS CLI for later use
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+         
+      # Step: Retrieve the tfsec binary from S3
+      - name: Retrieve object from S3
+        run: |
+          aws s3 cp s3://tfsec-bucket/tfsec tfsec
+
+      # Step: Make the tfsec binary executable
+      - name: Convert the binary into executable
+        run: chmod +x tfsec
+ 
+      # Step: Move the executable to PATH
+      - name: Move executable to PATH
+        run: sudo mv tfsec /usr/local/bin
+ 
+      # Step: Run tfsec on the entire codebase and generate complete analysis results
+      - name: Run tfsec and generate complete analysis results
+        id: tfsec_complete
+        run: |
+          tfsec . --out complete_results.md --format markdown --soft-fail --force-all-dirs --minimum-severity HIGH
+ 
+      # Step: Create Results directory and move the results file
+      - name: Create Results directory and move the results file
+        run: |
+          mkdir -p Results
+          mv complete_results.md Results/tfsec_results.md
+ 
+      # Step: Display the contents of the Results directory
+      - name: Display the contents of the Results directory
+        run: ls -R Results
+ 
+      # Step: Upload the results file as a release asset
+      - name: Upload the results file as a release asset
+        id: extract-url
+        if: steps.tfsec_complete.outputs != ''  # Run only if there are findings
+        env:
+          GITHUB_TOKEN: ${{ secrets.SECURITY_TOKEN_FOR_TFSEC }}
+        run: |
+          # Check if a release exists
+          latest_release=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "$GITHUB_SERVER_URL/api/v3/repos/$GITHUB_REPOSITORY/releases/latest")
+          echo "$latest_release"
+ 
+          if [[ $latest_release == *"message"* ]]; then
+            # No release found, create a new one
+            echo "No releases found, creating a new release..."
+            release_id=$(curl -s -X POST \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -d '{"tag_name": "v1.0.0", "name": "Release v1.0.0", "body": "Release v1.0.0"}' \
+              "$GITHUB_SERVER_URL/api/v3/repos/$GITHUB_REPOSITORY/releases" | jq -r '.id')
+          else
+            # Use the latest release
+            release_id=$(echo "$latest_release" | jq -r '.id')
+            echo "Using the latest release with ID: $release_id"
+          fi
+ 
+          # Create a unique filename with date and timestamp
+          filename="tfsec_results_$(date +"%Y%m%d_%H%M%S").md"
+ 
+          # Upload the file as a release asset
+          response=$(curl -s -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@Results/tfsec_results.md" \
+            "$GITHUB_SERVER_URL/api/uploads/repos/$GITHUB_REPOSITORY/releases/$release_id/assets?name=$filename")
+           
+          echo "GitHub Repository: $GITHUB_REPOSITORY"
+          echo "Latest Release Response: $latest_release"
+          echo "Release ID: $release_id"
+          echo "Filename: $filename"
+          echo "Asset URL: $asset_url"
+          echo "$response"
+          echo "$GITHUB_SERVER_URL"
+ 
+          # Check if the asset was uploaded successfully
+          asset_url=$(echo "$response" | jq -r '.url')
+          if [ "$asset_url" != "null" ]; then
+            echo "::set-output name=asset_url::$asset_url"
+          else
+            echo "Failed to upload asset."
+            exit 1
+          fi
+ 
+      # Step: Post a PR comment with the asset URL
+      - name: Post PR comment with asset URL
+        if: steps.extract-url.outputs.asset_url != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ReleaseURL = 'The complete terraform related security issues result file for the entire repo can be found here - ' + process.env.GITHUB_SERVER_URL + '/' + process.env.GITHUB_REPOSITORY + '/releases';
+            assetUrl="Results file uploaded: [tfsec_results.json]($ReleaseURL)";
+            console.log(assetUrl);  // Add a console log to debug
+ 
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: ReleaseURL
+            })
