@@ -175,7 +175,7 @@ jobs:
         run: |
           # Check if a release exists
           latest_release=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "$GITHUB_SERVER_URL/api/v3/repos/$GITHUB_REPOSITORY/releases/latest")
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest")
           echo "$latest_release"
  
           if [[ $latest_release == *"message"* ]]; then
@@ -185,7 +185,7 @@ jobs:
               -H "Authorization: token $GITHUB_TOKEN" \
               -H "Accept: application/vnd.github.v3+json" \
               -d '{"tag_name": "v1.0.0", "name": "Release v1.0.0", "body": "Release v1.0.0"}' \
-              "$GITHUB_SERVER_URL/api/v3/repos/$GITHUB_REPOSITORY/releases" | jq -r '.id')
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/releases" | jq -r '.id')
           else
             # Use the latest release
             release_id=$(echo "$latest_release" | jq -r '.id')
@@ -200,7 +200,7 @@ jobs:
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Content-Type: application/octet-stream" \
             --data-binary "@Results/tfsec_results.md" \
-            "$GITHUB_SERVER_URL/api/uploads/repos/$GITHUB_REPOSITORY/releases/$release_id/assets?name=$filename")
+            "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$release_id/assets?name=$filename")
            
           echo "GitHub Repository: $GITHUB_REPOSITORY"
           echo "Latest Release Response: $latest_release"
