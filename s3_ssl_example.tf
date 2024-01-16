@@ -139,7 +139,7 @@ resource "aws_cloudfront_distribution" "this" {
 }
 
 
-
+## sample comment
 ## Route53
 # Add an IPv4 DNS record pointing to the CloudFront distribution
 resource "aws_route53_record" "ipv4" {
