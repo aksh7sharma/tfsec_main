@@ -21,6 +21,7 @@ resource "aws_s3_bucket" "this" {
   tags   = var.tags
 }
 
+# random comment
 resource "aws_s3_bucket_public_access_block" "website_bucket" {
   bucket = aws_s3_bucket.this.id
 
