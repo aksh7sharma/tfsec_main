@@ -16,6 +16,7 @@ resource aws_ecr_repository "repository" {
     yor_trace            = "7a3ec657-fa54-4aa2-8467-5d08d6c90bc2"
   })
 }
+#comment
 
 locals {
   docker_image = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/${aws_ecr_repository.repository.name}"
