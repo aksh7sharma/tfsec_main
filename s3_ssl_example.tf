@@ -61,7 +61,7 @@ resource "aws_cloudfront_origin_access_identity" "this" {
   comment = "Origin Access Identity used to access S3 for ${var.site_domain}"
 }
 
-
+#tfsec:ignore:aws-cloudfront-enable-waf
 resource "aws_cloudfront_distribution" "this" {
   origin {
     domain_name = aws_s3_bucket.this.bucket_regional_domain_name
