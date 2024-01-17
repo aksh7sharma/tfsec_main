@@ -46,6 +46,7 @@ resource "aws_instance" "this" {
 }
 
 # Attach the separate data volume to the instance, if so configured
+#
 
 resource "aws_volume_attachment" "this" {
   count       = "${var.data_volume_id == "" ? 0 : 1}" # only create this resource if an external EBS data volume was provided
