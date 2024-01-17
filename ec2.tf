@@ -131,7 +131,7 @@ resource "aws_vpc" "web_vpc" {
     yor_trace            = "9bf2359b-952e-4570-9595-52eba4c20473"
   })
 }
-# sample comment
+# sample comment2
 resource "aws_subnet" "web_subnet" {
   vpc_id                  = aws_vpc.web_vpc.id
   cidr_block              = "172.16.10.0/24"
