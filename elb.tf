@@ -16,7 +16,7 @@ resource "aws_elb" "weblb" {
     target              = "HTTP:8000/"
     interval            = 30
   }
-
+# comment1
   subnets                     = [aws_subnet.web_subnet.id]
   security_groups             = [aws_security_group.web-node.id]
   instances                   = [aws_instance.web_host.id]
