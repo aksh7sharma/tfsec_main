@@ -30,7 +30,7 @@ EOF
     yor_trace            = "347af3cd-4f70-4632-aca3-4d5e30ffc0b6"
   })
 }
-
+# sample comment
 resource "aws_ebs_volume" "web_host_storage" {
   # unencrypted volume
   availability_zone = "${var.region}a"
@@ -131,7 +131,7 @@ resource "aws_vpc" "web_vpc" {
     yor_trace            = "9bf2359b-952e-4570-9595-52eba4c20473"
   })
 }
-
+# sample comment
 resource "aws_subnet" "web_subnet" {
   vpc_id                  = aws_vpc.web_vpc.id
   cidr_block              = "172.16.10.0/24"
