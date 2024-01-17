@@ -72,7 +72,7 @@ resource "aws_db_parameter_group" "default" {
     value        = "utf8"
     apply_method = "immediate"
   }
-
+# sample comment
   parameter {
     name         = "character_set_server"
     value        = "utf8"
