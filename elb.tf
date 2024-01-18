@@ -8,7 +8,7 @@ resource "aws_elb" "weblb" {
     lb_port           = 80
     lb_protocol       = "http"
   }
-
+#comment
   health_check {
     healthy_threshold   = 2
     unhealthy_threshold = 2
