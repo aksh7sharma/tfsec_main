@@ -8,7 +8,7 @@ resource "aws_elb" "weblb" {
     lb_port           = 80
     lb_protocol       = "http"
   }
-
+#comment
   health_check {
     healthy_threshold   = 2
     unhealthy_threshold = 2
@@ -16,7 +16,7 @@ resource "aws_elb" "weblb" {
     target              = "HTTP:8000/"
     interval            = 30
   }
-
+#comment
   subnets                     = [aws_subnet.web_subnet.id]
   security_groups             = [aws_security_group.web-node.id]
   instances                   = [aws_instance.web_host.id]
@@ -24,7 +24,7 @@ resource "aws_elb" "weblb" {
   idle_timeout                = 400
   connection_draining         = true
   connection_draining_timeout = 400
-
+#comment1
   tags = merge({
     Name = "foobar-terraform-elb"
     }, {
