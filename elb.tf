@@ -24,7 +24,7 @@ resource "aws_elb" "weblb" {
   idle_timeout                = 400
   connection_draining         = true
   connection_draining_timeout = 400
-
+#comment1
   tags = merge({
     Name = "foobar-terraform-elb"
     }, {
